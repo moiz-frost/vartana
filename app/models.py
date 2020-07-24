@@ -1,8 +1,9 @@
 from django.db import models
 from model_utils.models import TimeStampedModel
+from rest_framework import serializers
 
 
-class Form(TimeStampedModel):
+class FormMeta(TimeStampedModel):
 
     alias = models.CharField(
         max_length=50, 
@@ -20,7 +21,17 @@ class Form(TimeStampedModel):
     )
 
     class Meta:
-        abstract = True
+        db_table = 'form_meta'
+        # abstract = True
+
+    @classmethod
+    def get_serializer(cls):
+        class BaseSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = cls
+                fields = '__all__'
+
+        return BaseSerializer
 
     def get_taxable_income_from_bracket(self, taxable_income, percentage):
         if taxable_income > 50000:
@@ -32,7 +43,7 @@ class Form(TimeStampedModel):
         
         return taxable_income
 
-class Form_1099(Form):
+class Form_1099(FormMeta):
 
     total_income = models.DecimalField(
         default=0.00, 
@@ -64,7 +75,7 @@ class Form_1099(Form):
     def __str__(self):
         return self.pk
 
-class Form_W2(Form):
+class Form_W2(FormMeta):
     
     total_income = models.DecimalField(
         default=0.00, 
@@ -92,7 +103,7 @@ class Form_W2(Form):
     def __str__(self):
         return self.pk
 
-class Form_1040(Form):
+class Form_1040(FormMeta):
     
     total_taxable_income = models.DecimalField(
         default=0.00, 
