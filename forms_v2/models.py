@@ -23,36 +23,36 @@ class FormDefinition(TimeStampedModel):
         help_text='[Optional] custom description'
     )
 
-    form_fields = models.ManyToManyField('FormFieldDefinition', through='FormDefinitionFields')
+    # form_fields = models.ManyToManyField('FormFieldDefinition', through='FormDefinitionFields')
 
     class Meta:
         db_table = 'form_definition'
         constraints = [
             models.UniqueConstraint(fields=['name'], name='name constraint')
         ]
-
-# class FormFieldDataType(TimeStampedModel):
+"""
+class FormFieldDataType(TimeStampedModel):
     
-#     FIELD_DATA_TYPES = (
-#         ('integer', 'integer'),
-#         ('string', 'string'),
-#         ('decimal', 'decimal'),
-#         ('enum', 'enum'),
-#         ('computed', 'computed')
-#     )
+    FIELD_DATA_TYPES = (
+        ('integer', 'integer'),
+        ('string', 'string'),
+        ('decimal', 'decimal'),
+        ('enum', 'enum'),
+        ('computed', 'computed')
+    )
 
-#     type = models.CharField(max_length=20, choices=FIELD_DATA_TYPES)
+    type = models.CharField(max_length=20, choices=FIELD_DATA_TYPES)
     
-#     description = models.CharField(
-#         max_length=1000, 
-#         blank=True, 
-#         null=True,
-#         help_text='[Optional] custom description'
-#     )
+    description = models.CharField(
+        max_length=1000, 
+        blank=True, 
+        null=True,
+        help_text='[Optional] custom description'
+    )
 
-#     class Meta:
-#         db_table = 'form_field_data_type'
-
+    class Meta:
+        db_table = 'form_field_data_type'
+"""
 
 class FormFieldDefinition(TimeStampedModel):
 
@@ -81,6 +81,7 @@ class FormFieldDefinition(TimeStampedModel):
     # form = models.ForeignKey(FormDefinition, on_delete=models.CASCADE)
     # data_type = models.ForeignKey(FormFieldDataType, on_delete=models.SET_NULL, null=True)
     data_type = models.CharField(max_length=20, choices=FIELD_DATA_TYPES)
+    form_definition = models.ForeignKey(FormDefinition, related_name='form_fields_definitions', on_delete=models.CASCADE)
 
     description = models.CharField(
         max_length=1000, 
@@ -92,16 +93,17 @@ class FormFieldDefinition(TimeStampedModel):
     class Meta:
         db_table = 'form_field_definition'
         constraints = [
-            models.UniqueConstraint(fields=['reference_name', 'id'], name='reference_name and pk')
+            models.UniqueConstraint(fields=['reference_name', 'id'], name='reference_name and pk'),
+            models.UniqueConstraint(fields=['display_order', 'form_definition'], name='display_order and form_definition')
         ]
-
+"""
 class FormDefinitionFields(TimeStampedModel):
     form_definition = models.ForeignKey(FormDefinition, on_delete=models.CASCADE)
     form_field_definition = models.ForeignKey(FormFieldDefinition, on_delete=models.CASCADE)
 
     class Meta:
         db_table = "form_definition_fields"
-
+"""
 
 class FormInstance(TimeStampedModel):
 
@@ -114,17 +116,17 @@ class FormInstance(TimeStampedModel):
         help_text='[Optional] custom description'
     )
 
-    form_field_values = models.ManyToManyField('FormFieldValue', through='FormInstaceFieldValue')
+    # form_field_values = models.ManyToManyField('FormFieldValue', through='FormInstaceFieldValue')
 
     class Meta:
         db_table = 'form_instance'
 
-class FormInstaceFieldValue(TimeStampedModel):
-    form_instance = models.ForeignKey(FormInstance, on_delete=models.CASCADE)
-    form_field_value = models.ForeignKey('FormFieldValue', on_delete=models.CASCADE)
+# class FormInstaceFieldValue(TimeStampedModel):
+#     form_instance = models.ForeignKey(FormInstance, on_delete=models.CASCADE)
+#     form_field_value = models.ForeignKey('FormFieldValue', on_delete=models.CASCADE)
 
-    class Meta:
-        db_table = "form_instance_field_value"
+#     class Meta:
+#         db_table = "form_instance_field_value"
 
 class FormFieldValue(TimeStampedModel):
 
@@ -142,7 +144,9 @@ class FormFieldValue(TimeStampedModel):
         help_text='Field Name'
     )
 
-    form_field_definition = models.ForeignKey(FormFieldDefinition, on_delete=models.SET_NULL, null=True)
+    form_field_definition = models.ForeignKey(FormFieldDefinition, on_delete=models.CASCADE)
+
+    form_instance = models.ForeignKey(FormInstance, related_name='form_instance_fields', on_delete=models.CASCADE)
 
     description = models.CharField(
         max_length=1000, 
