@@ -1,4 +1,5 @@
 from django.db import models
+from django.db.models import Sum
 from model_utils.models import TimeStampedModel
 from rest_framework import serializers
 
@@ -10,7 +11,6 @@ class FormMeta(TimeStampedModel):
         max_length=50, 
         blank=True, 
         null=True,
-        unique=True, # create db index as well
         help_text='[Optional] use this field to search this form for later'
     )
 
@@ -23,10 +23,13 @@ class FormMeta(TimeStampedModel):
 
     class Meta:
         db_table = 'form_meta'
+        constraints = [
+            models.UniqueConstraint(fields=['alias', 'id'], name='alias and pk')
+        ]
         # abstract = True
 
     @classmethod
-    def get_serializer(cls):
+    def get_default_serializer(cls):
         class BaseSerializer(serializers.ModelSerializer):
             class Meta:
                 model = cls
@@ -59,7 +62,7 @@ class Form_1099(FormMeta):
         help_text='Total business expenses in $ amount rounded up to two decimal places'
     )
     total_miles_driven = models.IntegerField(help_text='Total miles driven rounded to the nearest integer')
-    total_taxable_income = models.IntegerField(blank=True, null=True, help_text='Computed')
+    total_taxable_income = models.IntegerField(null=True, help_text='Computed')
 
     class Meta:
         db_table = 'form_1099'
@@ -93,7 +96,7 @@ class Form_W2(FormMeta):
         help_text='Total taxes paid in $ amount accurate rounded up to two decimal places'
     )
 
-    total_taxable_income = models.IntegerField(help_text='Computed')
+    total_taxable_income = models.IntegerField(null=True, help_text='Computed')
 
     class Meta:
         db_table = 'form_W2'
@@ -111,6 +114,7 @@ class Tax_Form_1040(FormMeta):
         default=0.00, 
         max_digits=19, 
         decimal_places=2,
+        null=True,
         help_text='Sum of taxable incomes across all Form 1099 ​and Form W-2'
     )
     
@@ -118,6 +122,7 @@ class Tax_Form_1040(FormMeta):
         default=0.00, 
         max_digits=19, 
         decimal_places=2,
+        null=True,
         help_text='Sum tax paid across all Form W-2'
     )
 
@@ -125,6 +130,7 @@ class Tax_Form_1040(FormMeta):
         default=0.00, 
         max_digits=19, 
         decimal_places=2,
+        null=True,
         help_text='Computed'
     )
 
@@ -132,13 +138,37 @@ class Tax_Form_1040(FormMeta):
         default=0.00, 
         max_digits=19, 
         decimal_places=2,
+        null=True,
         help_text='Total tax paid minus total tax liability'
     )
 
     class Meta:
         db_table = 'tax_form_1040'
 
+    def compute_total_taxable_income(self):
+        return Form_1099.objects.aggregate(Sum('total_income'))['total_income__sum'] or 0.0
+
+    def compute_total_taxes_paid(self):
+        return Form_W2.objects.aggregate(Sum('total_taxes_paid'))['total_taxes_paid__sum'] or 0.0
+
+    def compute_total_tax_liability(self):
+        total_taxable_income = self.total_taxable_income
+        if total_taxable_income < 100000 and total_taxable_income > 0:
+            total_taxable_income = total_taxable_income * Decimal(0.2)
+        else:
+            total_taxable_income = total_taxable_income * Decimal(0.28)
+            
+        return total_taxable_income
+
+    def compute_tax_difference(self):
+        return Decimal(self.total_taxes_paid) - self.total_tax_liability
+
     def save(self, *args, **kwargs):
+        self.total_taxable_income = self.compute_total_taxable_income()
+        self.total_taxes_paid = self.compute_total_taxes_paid()
+        self.total_tax_liability = self.compute_total_tax_liability()
+        self.tax_difference = self.compute_tax_difference()
+
         super().save(*args, **kwargs)
     
     def __str__(self):
