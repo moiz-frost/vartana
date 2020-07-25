@@ -7,8 +7,7 @@ from app import views
 # router = DefaultRouter()
 router = routers.SimpleRouter()
 router.register(r'^form/(?P<form_type>[-\w]+)', views.FormViewSet, basename='form')
-
-# router.register('forms', views.FormViewSet)
+# router.register(r'^form_1040/)', views.FormViewSet, basename='form')
 
 urlpatterns = [
     path('', include(router.urls))

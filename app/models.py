@@ -2,6 +2,7 @@ from django.db import models
 from model_utils.models import TimeStampedModel
 from rest_framework import serializers
 
+from decimal import Decimal
 
 class FormMeta(TimeStampedModel):
 
@@ -58,14 +59,15 @@ class Form_1099(FormMeta):
         help_text='Total business expenses in $ amount rounded up to two decimal places'
     )
     total_miles_driven = models.IntegerField(help_text='Total miles driven rounded to the nearest integer')
-    total_taxable_income = models.IntegerField(help_text='Computed')
+    total_taxable_income = models.IntegerField(blank=True, null=True, help_text='Computed')
 
     class Meta:
         db_table = 'form_1099'
-
+    
     def compute_total_taxable_income(self):
         revenue = self.total_income - self.total_business_expenses
-        taxable_income = revenue - (2.1 * self.total_miles_driven)
+        taxable_income = revenue - Decimal(2.1 * self.total_miles_driven)
+        taxable_income = int(round(taxable_income))
         return self.get_taxable_income_from_bracket(taxable_income, 1)
 
     def save(self, *args, **kwargs):
@@ -103,7 +105,7 @@ class Form_W2(FormMeta):
     def __str__(self):
         return self.pk
 
-class Form_1040(FormMeta):
+class Tax_Form_1040(FormMeta):
     
     total_taxable_income = models.DecimalField(
         default=0.00, 
@@ -134,7 +136,7 @@ class Form_1040(FormMeta):
     )
 
     class Meta:
-        db_table = 'form_1040'
+        db_table = 'tax_form_1040'
 
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
