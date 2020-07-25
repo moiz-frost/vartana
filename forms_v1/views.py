@@ -3,8 +3,8 @@ from django.http import JsonResponse
 from rest_framework import mixins, status, viewsets
 from rest_framework.response import Response
 
-from app.utils import get_model_or_404, get_object_or_404
-from app.mixin import CheckValidFormMixin
+from forms_v1.utils import get_model_or_404, get_object_or_404
+from forms_v1.mixin import CheckValidFormMixin
 
 class FormViewSet(
         CheckValidFormMixin, 
@@ -15,12 +15,12 @@ class FormViewSet(
 
     def get_queryset(self):
         model_name = self.kwargs['form_type']
-        model = get_model_or_404(model_name)
+        model = get_model_or_404('app', model_name)
         return model.objects.all()
     
     def get_serializer_class(self):
         model_name = self.kwargs['form_type']
-        model = get_model_or_404(model_name)
+        model = get_model_or_404('app', model_name)
         serializer_class = model.get_serializer()
         return serializer_class
 

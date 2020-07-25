@@ -4,9 +4,9 @@ from django.http import Http404
 from django.apps import apps
 from django.shortcuts import _get_queryset
 
-def get_model_or_404(name):
+def get_model_or_404(app_label, model_name):
     try:
-        return apps.get_model(app_label='app', model_name=name)
+        return apps.get_model(app_label=app_label, model_name=model_name)
     except Exception as e:
         print('Not Found: {model}'.format(model=name))
         # print(traceback.format_stack())
