@@ -29,12 +29,12 @@ class FormDefinitionViewSerializer(serializers.ModelSerializer):
 
 
 class FormFieldValueViewSerializer(serializers.ModelSerializer):
-    # form_field_definition = FormFieldDefinitionViewSerializer(many=True)
-    form_field_definition = serializers.PrimaryKeyRelatedField(queryset=FormFieldDefinition.objects.all())
+    form_field_definition = FormFieldDefinitionViewSerializer(read_only=True)
+    form_field_definition_id = serializers.PrimaryKeyRelatedField(queryset=FormFieldDefinition.objects.all(), source= 'form_field_definition', write_only=True)
 
     class Meta:
         model = FormFieldValue
-        fields = ['id', 'value', 'reference_name', 'form_field_definition']
+        fields = ['id', 'value', 'reference_name', 'form_field_definition_id', 'form_field_definition']
 
 class FormInstanceViewSerializer(serializers.ModelSerializer):
     form_instance_fields = FormFieldValueViewSerializer(many=True)
